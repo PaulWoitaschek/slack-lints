@@ -23,10 +23,8 @@ import com.android.tools.lint.detector.api.JavaContext
 import com.android.tools.lint.detector.api.Severity
 import com.android.tools.lint.detector.api.SourceCodeScanner
 import com.android.tools.lint.detector.api.TextFormat
-import com.android.tools.lint.detector.api.isJava
-import org.jetbrains.kotlin.psi.KtValueArgument
+import com.android.tools.lint.detector.api.isKotlin
 import org.jetbrains.kotlin.psi.KtValueArgumentList
-import org.jetbrains.kotlin.psi.KtValueArgumentName
 import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
 import org.jetbrains.uast.UCallExpression
 import slack.lint.util.sourceImplementation
@@ -41,13 +39,13 @@ class MustUseNamedParamsDetector : Detector(), SourceCodeScanner {
         val method = node.resolve() ?: return
 
         // Java doesn't have named parameters.
-        if (isJava(method.language)) return
+        if (!isKotlin(method.language)) return
 
         if (method.hasAnnotation("slack.lint.annotations.MustUseNamedParams")) {
           val areAllNamed = node.sourcePsi!!
             .getChildOfType<KtValueArgumentList>()!!
-            .children.filterIsInstance<KtValueArgument>()
-            .all { it.getChildOfType<KtValueArgumentName>() != null }
+            .arguments
+            .all { it.isNamed() }
 
           if (!areAllNamed) {
             context.report(
